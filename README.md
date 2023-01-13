@@ -1,2 +1,2 @@
-# local-plugin
+# Local Plugin
 Local plugin for Done
