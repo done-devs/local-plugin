@@ -27,7 +27,7 @@ impl Provider for LocalService {
 		let send_request = || -> anyhow::Result<Vec<String>> {
 			let result: Vec<String> = tasks
 				.select(id_task)
-				.filter(id_task.eq(request.into_inner()))
+				.filter(parent_list.eq(request.into_inner()))
 				.load::<String>(&mut establish_connection()?)
 				.context("Failed to fetch list of tasks.")?;
 			Ok(result)
