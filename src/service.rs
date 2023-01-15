@@ -3,9 +3,10 @@ use crate::diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 use crate::models::{QueryableList, QueryableTask};
 use crate::schema::lists::dsl::*;
 use crate::schema::tasks::dsl::*;
-use anyhow::Context;
-use done_provider::services::provider::provider_server::Provider;
-use done_provider::services::provider::{
+use anyhow::{Context, anyhow};
+use proto_rust::{TaskIdResponse, ListIdResponse};
+use proto_rust::provider::provider_server::Provider;
+use proto_rust::provider::{
 	CountResponse, Empty, List, ListResponse, Task, TaskResponse,
 };
 use tokio_stream::wrappers::ReceiverStream;
@@ -21,6 +22,60 @@ pub struct LocalService {
 
 #[tonic::async_trait]
 impl Provider for LocalService {
+
+	async fn read_task_ids_from_list(&self, request: Request<String>) -> Result<Response<TaskIdResponse>, Status> {
+		let send_request = || -> anyhow::Result<Vec<String>> {
+			let result: Vec<String> = tasks
+				.select(id_task)
+				.filter(id_task.eq(request.into_inner()))
+				.load::<String>(&mut establish_connection()?)
+				.context("Failed to fetch list of tasks.")?;
+			Ok(result)
+		};
+
+		let mut response = TaskIdResponse {
+			successful: true, 
+			message: String::new(),
+			tasks: vec![]
+		};
+
+		match send_request() {
+			Ok(result) => {
+				response.successful = true;
+				response.tasks = result;
+			},
+			Err(_) => response.message = "Failed to fetch list of tasks".to_string()
+		}
+
+		Ok(Response::new(response))
+	}
+
+	async fn read_all_list_ids(&self, _request: Request<Empty>) -> Result<Response<ListIdResponse>, Status> {
+		let send_request = || -> anyhow::Result<Vec<String>> {
+			let result: Vec<String> = lists
+				.select(id_list)
+				.load::<String>(&mut establish_connection()?)
+				.context("Failed to fetch list of tasks.")?;
+			Ok(result)
+		};
+
+		let mut response = ListIdResponse {
+			successful: true, 
+			message: String::new(),
+			lists: vec![]
+		};
+
+		match send_request() {
+			Ok(result) => {
+				response.successful = true;
+				response.lists = result;
+			},
+			Err(_) => response.message = "Failed to fetch list of tasks".to_string()
+		}
+
+		Ok(Response::new(response))
+	}
+
 	async fn get_id(
 		&self,
 		_request: Request<Empty>,
@@ -47,31 +102,6 @@ impl Provider for LocalService {
 		_request: Request<Empty>,
 	) -> Result<Response<String>, Status> {
 		Ok(Response::new(self.icon.clone()))
-	}
-
-	async fn read_task_count_from_list(
-		&self,
-		request: Request<String>,
-	) -> Result<Response<CountResponse>, Status> {
-		let id = request.into_inner();
-		let mut response = CountResponse::default();
-
-		let send_request = || -> anyhow::Result<i64> {
-			let count: i64 = tasks
-				.filter(id_task.eq(id))
-				.count()
-				.get_result(&mut establish_connection()?)?;
-			Ok(count)
-		};
-
-		match send_request() {
-			Ok(value) => {
-				response.count = value;
-				response.successful = true;
-			},
-			Err(err) => response.message = err.to_string(),
-		}
-		Ok(Response::new(response))
 	}
 
 	type ReadAllTasksStream = ReceiverStream<Result<TaskResponse, Status>>;
@@ -149,6 +179,33 @@ impl Provider for LocalService {
 		});
 
 		Ok(Response::new(ReceiverStream::new(rx)))
+	}
+
+	
+
+	async fn read_task_count_from_list(
+		&self,
+		request: Request<String>,
+	) -> Result<Response<CountResponse>, Status> {
+		let id = request.into_inner();
+		let mut response = CountResponse::default();
+
+		let send_request = || -> anyhow::Result<i64> {
+			let count: i64 = tasks
+				.filter(id_task.eq(id))
+				.count()
+				.get_result(&mut establish_connection()?)?;
+			Ok(count)
+		};
+
+		match send_request() {
+			Ok(value) => {
+				response.count = value;
+				response.successful = true;
+			},
+			Err(err) => response.message = err.to_string(),
+		}
+		Ok(Response::new(response))
 	}
 
 	async fn create_task(

@@ -2,7 +2,7 @@ extern crate diesel;
 #[macro_use]
 extern crate diesel_migrations;
 
-use done_provider::services::provider::provider_server::ProviderServer;
+use proto_rust::provider::provider_server::ProviderServer;
 use tonic::transport::Server;
 
 mod service;
