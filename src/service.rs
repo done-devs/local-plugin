@@ -216,10 +216,10 @@ impl Provider for LocalService {
 		let mut response = TaskResponse::default();
 
 		let send_request = || -> anyhow::Result<()> {
-			let task: QueryableTask = task.into();
+			let queryable_task: QueryableTask = task.clone().into();
 
 			diesel::insert_into(tasks)
-				.values(&task)
+				.values(&queryable_task)
 				.execute(&mut establish_connection()?)?;
 
 			Ok(())
@@ -227,7 +227,7 @@ impl Provider for LocalService {
 
 		match send_request() {
 			Ok(()) => {
-				response.task = None;
+				response.task = Some(task);
 				response.successful = true;
 				response.message = "Task added successfully.".to_string()
 			},
