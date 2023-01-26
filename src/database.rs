@@ -7,7 +7,7 @@ use libset::{format::FileFormat, new_file, project::Project};
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations");
 const DATABASE_NAME: &str = "done_database.db";
 
-fn migrate_database() -> Result<()> {
+pub fn migrate_database() -> Result<()> {
     let local_plugin_project = Project::new("dev", "edfloreshz", "local-plugin")
         .add_files(&[new_file!(DATABASE_NAME).set_format(FileFormat::Plain)])?;
     let done_project = Project::open("dev", "edfloreshz", "done")?;
@@ -28,7 +28,7 @@ fn migrate_database() -> Result<()> {
     Ok(())
 }
 
-fn migration_status() -> Result<()> {
+pub fn migration_status() -> Result<()> {
     Project::open("dev", "edfloreshz", "local-plugin")?;
     Ok(())
 }
@@ -49,16 +49,13 @@ fn database_url() -> Result<String> {
 }
 
 pub fn establish_connection() -> Result<SqliteConnection> {
-    let url = database_url()?;
+    SqliteConnection::establish(database_url()?.as_str()).context("Error connecting to database")
+}
 
-    if migration_status().is_err() {
-        migrate_database()?;
-    } 
-
-    let mut connection =
-        SqliteConnection::establish(url.as_str()).context("Error connecting to database")?;
+pub fn ensure_migrations_up_to_date() -> Result<()>  {
+    let mut connection = SqliteConnection::establish(database_url()?.as_str()).context("Error connecting to database")?;
     match connection.run_pending_migrations(MIGRATIONS) {
-        Ok(_) => Ok(connection),
+        Ok(_) => Ok(()),
         Err(err) => {
             tracing::error!("{err}");
             Err(anyhow!(err))

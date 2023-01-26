@@ -24,7 +24,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         icon: "user-home-symbolic".to_string(),
     };
 
-    setup::init();
+    setup::init()?;
+
+    tracing::info!("Running local service v0.1.2");
 
     Server::builder()
         .add_service(ProviderServer::new(local_service))
