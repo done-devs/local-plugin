@@ -1,5 +1,5 @@
 use crate::diesel_migrations::MigrationHarness;
-use anyhow::{Context, Result};
+use anyhow::{Context, Result, anyhow};
 use diesel::{Connection, SqliteConnection};
 use diesel_migrations::EmbeddedMigrations;
 use libset::{format::FileFormat, new_file, project::Project};
@@ -49,14 +49,19 @@ fn database_url() -> Result<String> {
 }
 
 pub fn establish_connection() -> Result<SqliteConnection> {
-    if migration_status().is_err() {
-        migrate_database()?
-    }
-
     let url = database_url()?;
+
+    if migration_status().is_err() {
+        migrate_database()?;
+    } 
 
     let mut connection =
         SqliteConnection::establish(url.as_str()).context("Error connecting to database")?;
-    connection.run_pending_migrations(MIGRATIONS).unwrap();
-    Ok(connection)
+    match connection.run_pending_migrations(MIGRATIONS) {
+        Ok(_) => Ok(connection),
+        Err(err) => {
+            tracing::error!("{err}");
+            Err(anyhow!(err))
+        }
+    }
 }

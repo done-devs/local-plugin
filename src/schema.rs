@@ -4,25 +4,27 @@ diesel::table! {
     lists (id_list) {
         id_list -> Text,
         name -> Text,
-        is_owner -> Bool,
         icon_name -> Nullable<Text>,
-        provider -> Text,
     }
 }
 
 diesel::table! {
     tasks (id_task) {
         id_task -> Text,
-        parent_list -> Text,
+        parent -> Text,
         title -> Text,
-        body -> Nullable<Text>,
-        importance -> Integer,
         favorite -> Bool,
-        is_reminder_on -> Bool,
+        today -> Bool,
         status -> Integer,
-        completed_on -> Nullable<Timestamp>,
+        priority -> Integer,
+        sub_tasks -> Text,
+        tags -> Text,
+        notes -> Nullable<Text>,
+        completion_date -> Nullable<Timestamp>,
+        deletion_date -> Nullable<Timestamp>,
         due_date -> Nullable<Timestamp>,
         reminder_date -> Nullable<Timestamp>,
+        recurrence -> Nullable<Text>,
         created_date_time -> Timestamp,
         last_modified_date_time -> Timestamp,
     }

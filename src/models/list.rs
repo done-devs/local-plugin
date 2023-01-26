@@ -10,19 +10,15 @@ use crate::schema::lists;
 pub struct QueryableList {
     pub id_list: String,
     pub name: String,
-    pub is_owner: bool,
     pub icon_name: Option<String>,
-    pub provider: String,
 }
 
 impl QueryableList {
-    pub fn new(display_name: &str, icon_name: Option<String>, list_provider: String) -> Self {
+    pub fn new(display_name: &str, icon_name: Option<String>) -> Self {
         Self {
             id_list: Uuid::new_v4().to_string(),
             name: display_name.to_string(),
-            is_owner: true,
             icon_name,
-            provider: list_provider,
         }
     }
 }
@@ -32,9 +28,7 @@ impl From<QueryableList> for List {
         List {
             id: value.id_list,
             name: value.name,
-            is_owner: value.is_owner,
             icon: value.icon_name,
-            provider: value.provider,
         }
     }
 }
@@ -44,9 +38,7 @@ impl From<List> for QueryableList {
         Self {
             id_list: task.id,
             name: task.name,
-            is_owner: task.is_owner,
             icon_name: task.icon,
-            provider: task.provider,
         }
     }
 }
