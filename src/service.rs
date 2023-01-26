@@ -56,8 +56,7 @@ impl Provider for LocalService {
         let send_request = || -> anyhow::Result<Vec<Task>> {
             let result: Vec<QueryableTask> = tasks
                 .filter(parent.eq(id))
-                .load::<QueryableTask>(&mut establish_connection()?)
-                .context("Failed to fetch list of tasks.")?;
+                .load::<QueryableTask>(&mut establish_connection()?)?;
             let results: Vec<Task> = result.iter().map(|t| t.clone().into()).collect();
             Ok(results)
         };
