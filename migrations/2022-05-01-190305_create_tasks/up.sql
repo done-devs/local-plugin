@@ -3,7 +3,7 @@ CREATE TABLE tasks
     id_task                 TEXT        NOT NULL
             CONSTRAINT tasks_pk
             PRIMARY KEY,
-    parent_list             TEXT        NOT NULL,
+    id_list             TEXT        NOT NULL,
     title                   TEXT        NOT NULL,
     body                    TEXT,
     importance              INTEGER     DEFAULT 1 NOT NULL,

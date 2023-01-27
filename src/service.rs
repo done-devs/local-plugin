@@ -1,4 +1,4 @@
-use crate::database::establish_connection;
+use crate::database::Database;
 use crate::diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 use crate::models::{QueryableList, QueryableTask};
 use crate::schema::lists::dsl::*;
@@ -30,7 +30,7 @@ impl Provider for LocalService {
         let send_request = || -> anyhow::Result<Task> {
             let result: QueryableTask = tasks
                 .find(id)
-                .first(&mut establish_connection()?)
+                .first(&mut Database::establish_connection()?)
                 .context("Failed to fetch list of tasks.")?;
             Ok(result.into())
         };
@@ -48,7 +48,10 @@ impl Provider for LocalService {
 
     type GetTasksStream = ReceiverStream<Result<ProviderResponse, Status>>;
 
-    async fn get_tasks(&self, request: Request<String>) -> Result<Response<Self::GetTasksStream>, Status> {
+    async fn get_tasks(
+        &self,
+        request: Request<String>,
+    ) -> Result<Response<Self::GetTasksStream>, Status> {
         tracing::info!("Request received: {request:?}");
         let (tx, rx) = tokio::sync::mpsc::channel(4);
         let id = request.into_inner();
@@ -56,7 +59,7 @@ impl Provider for LocalService {
         let send_request = || -> anyhow::Result<Vec<Task>> {
             let result: Vec<QueryableTask> = tasks
                 .filter(parent.eq(id))
-                .load::<QueryableTask>(&mut establish_connection()?)?;
+                .load::<QueryableTask>(&mut Database::establish_connection()?)?;
             let results: Vec<Task> = result.iter().map(|t| t.clone().into()).collect();
             Ok(results)
         };
@@ -81,7 +84,10 @@ impl Provider for LocalService {
         Ok(Response::new(ReceiverStream::new(rx)))
     }
 
-    async fn create_task(&self, request: Request<Task>) -> Result<Response<ProviderResponse>, Status> {
+    async fn create_task(
+        &self,
+        request: Request<Task>,
+    ) -> Result<Response<ProviderResponse>, Status> {
         tracing::info!("Request received: {request:?}");
         let task = request.into_inner();
         let mut response = ProviderResponse::default();
@@ -91,7 +97,7 @@ impl Provider for LocalService {
 
             diesel::insert_into(tasks)
                 .values(&queryable_task)
-                .execute(&mut establish_connection()?)?;
+                .execute(&mut Database::establish_connection()?)?;
 
             Ok(())
         };
@@ -107,7 +113,10 @@ impl Provider for LocalService {
         Ok(Response::new(response))
     }
 
-    async fn update_task(&self, request: Request<Task>) -> Result<Response<ProviderResponse>, Status> {
+    async fn update_task(
+        &self,
+        request: Request<Task>,
+    ) -> Result<Response<ProviderResponse>, Status> {
         tracing::info!("Request received: {request:?}");
         let task = request.into_inner();
         let mut response = ProviderResponse::default();
@@ -136,7 +145,7 @@ impl Provider for LocalService {
                     created_date_time.eq(queryable_task.created_date_time),
                     last_modified_date_time.eq(queryable_task.last_modified_date_time),
                 ))
-                .execute(&mut establish_connection()?)
+                .execute(&mut Database::establish_connection()?)
                 .context("Failed to update task.")?;
 
             Ok(original_task)
@@ -153,13 +162,17 @@ impl Provider for LocalService {
         Ok(Response::new(response))
     }
 
-    async fn delete_task(&self, request: Request<String>) -> Result<Response<ProviderResponse>, Status> {
+    async fn delete_task(
+        &self,
+        request: Request<String>,
+    ) -> Result<Response<ProviderResponse>, Status> {
         tracing::info!("Request received: {request:?}");
         let id = request.into_inner();
         let mut response = ProviderResponse::default();
 
         let send_request = || -> anyhow::Result<()> {
-            diesel::delete(tasks.filter(id_task.eq(id))).execute(&mut establish_connection()?)?;
+            diesel::delete(tasks.filter(id_task.eq(id)))
+                .execute(&mut Database::establish_connection()?)?;
 
             Ok(())
         };
@@ -174,13 +187,18 @@ impl Provider for LocalService {
         Ok(Response::new(response))
     }
 
-    async fn get_list(&self, request: Request<String>) -> Result<Response<ProviderResponse>, Status> {
+    async fn get_list(
+        &self,
+        request: Request<String>,
+    ) -> Result<Response<ProviderResponse>, Status> {
         tracing::info!("Request received: {request:?}");
         let id = request.into_inner();
         let mut response = ProviderResponse::default();
 
         let send_request = || -> anyhow::Result<List> {
-            let result: QueryableList = lists.find(id).first(&mut establish_connection()?)?;
+            let result: QueryableList = lists
+                .find(id)
+                .first(&mut Database::establish_connection()?)?;
             Ok(result.into())
         };
 
@@ -197,12 +215,15 @@ impl Provider for LocalService {
 
     type GetListsStream = ReceiverStream<Result<ProviderResponse, Status>>;
 
-    async fn get_lists(&self, request: Request<()>) -> Result<Response<Self::GetListsStream>, Status> {
+    async fn get_lists(
+        &self,
+        request: Request<()>,
+    ) -> Result<Response<Self::GetListsStream>, Status> {
         tracing::info!("Request received: {request:?}");
         let (tx, rx) = tokio::sync::mpsc::channel(4);
 
         let send_request = || -> anyhow::Result<Vec<List>> {
-            let results = lists.load::<QueryableList>(&mut establish_connection()?)?;
+            let results = lists.load::<QueryableList>(&mut Database::establish_connection()?)?;
 
             let results: Vec<List> = results.iter().map(|t| t.clone().into()).collect();
             Ok(results)
@@ -231,12 +252,15 @@ impl Provider for LocalService {
         Ok(Response::new(ReceiverStream::new(rx)))
     }
 
-    async fn get_list_ids(&self, request: Request<()>) -> Result<Response<ProviderResponse>, Status> {
+    async fn get_list_ids(
+        &self,
+        request: Request<()>,
+    ) -> Result<Response<ProviderResponse>, Status> {
         tracing::info!("Request received: {request:?}");
         let send_request = || -> anyhow::Result<Vec<String>> {
             let result: Vec<String> = lists
                 .select(id_list)
-                .load::<String>(&mut establish_connection()?)
+                .load::<String>(&mut Database::establish_connection()?)
                 .context("Failed to fetch list of tasks.")?;
             Ok(result)
         };
@@ -254,7 +278,10 @@ impl Provider for LocalService {
         Ok(Response::new(response))
     }
 
-    async fn create_list(&self, request: Request<List>) -> Result<Response<ProviderResponse>, Status> {
+    async fn create_list(
+        &self,
+        request: Request<List>,
+    ) -> Result<Response<ProviderResponse>, Status> {
         tracing::info!("Request received: {request:?}");
         let list = request.into_inner();
         let mut response = ProviderResponse::default();
@@ -264,7 +291,7 @@ impl Provider for LocalService {
 
             diesel::insert_into(lists)
                 .values(&list)
-                .execute(&mut establish_connection()?)?;
+                .execute(&mut Database::establish_connection()?)?;
 
             Ok(())
         };
@@ -280,7 +307,10 @@ impl Provider for LocalService {
         Ok(Response::new(response))
     }
 
-    async fn update_list(&self, request: Request<List>) -> Result<Response<ProviderResponse>, Status> {
+    async fn update_list(
+        &self,
+        request: Request<List>,
+    ) -> Result<Response<ProviderResponse>, Status> {
         tracing::info!("Request received: {request:?}");
         let list = request.into_inner();
         let mut response = ProviderResponse::default();
@@ -289,11 +319,8 @@ impl Provider for LocalService {
             let list: QueryableList = list.into();
 
             diesel::update(lists.filter(id_list.eq(list.id_list.clone())))
-                .set((
-                    name.eq(list.name.clone()),
-                    icon_name.eq(list.icon_name),
-                ))
-                .execute(&mut establish_connection()?)
+                .set((name.eq(list.name.clone()), icon_name.eq(list.icon_name)))
+                .execute(&mut Database::establish_connection()?)
                 .context("Failed to update list.")?;
 
             Ok(())
@@ -310,13 +337,17 @@ impl Provider for LocalService {
         Ok(Response::new(response))
     }
 
-    async fn delete_list(&self, request: Request<String>) -> Result<Response<ProviderResponse>, Status> {
+    async fn delete_list(
+        &self,
+        request: Request<String>,
+    ) -> Result<Response<ProviderResponse>, Status> {
         tracing::info!("Request received: {request:?}");
         let id = request.into_inner();
         let mut response = ProviderResponse::default();
 
         let send_request = || -> anyhow::Result<()> {
-            diesel::delete(lists.filter(id_list.eq(id))).execute(&mut establish_connection()?)?;
+            diesel::delete(lists.filter(id_list.eq(id)))
+                .execute(&mut Database::establish_connection()?)?;
             Ok(())
         };
 
@@ -332,7 +363,10 @@ impl Provider for LocalService {
 
     type GetTasksFromListStream = ReceiverStream<Result<ProviderResponse, Status>>;
 
-    async fn get_tasks_from_list(&self, request: Request<String>) -> Result<Response<Self::GetTasksFromListStream>, Status> {
+    async fn get_tasks_from_list(
+        &self,
+        request: Request<String>,
+    ) -> Result<Response<Self::GetTasksFromListStream>, Status> {
         tracing::info!("Request received: {request:?}");
         let (tx, rx) = tokio::sync::mpsc::channel(4);
         let id = request.into_inner();
@@ -340,7 +374,7 @@ impl Provider for LocalService {
         let send_request = || -> anyhow::Result<Vec<Task>> {
             let result: Vec<QueryableTask> = tasks
                 .filter(parent.eq(id))
-                .load::<QueryableTask>(&mut establish_connection()?)
+                .load::<QueryableTask>(&mut Database::establish_connection()?)
                 .context("Failed to fetch list of tasks.")?;
             let results: Vec<Task> = result.iter().map(|t| t.clone().into()).collect();
             Ok(results)
@@ -369,13 +403,16 @@ impl Provider for LocalService {
         Ok(Response::new(ReceiverStream::new(rx)))
     }
 
-    async fn get_task_ids_from_list(&self, request: Request<String>) -> Result<Response<ProviderResponse>, Status> {
+    async fn get_task_ids_from_list(
+        &self,
+        request: Request<String>,
+    ) -> Result<Response<ProviderResponse>, Status> {
         tracing::info!("Request received: {request:?}");
         let send_request = || -> anyhow::Result<Vec<String>> {
             let result: Vec<String> = tasks
                 .select(id_task)
                 .filter(parent.eq(request.into_inner()))
-                .load::<String>(&mut establish_connection()?)
+                .load::<String>(&mut Database::establish_connection()?)
                 .context("Failed to fetch list of tasks.")?;
             Ok(result)
         };
@@ -393,7 +430,10 @@ impl Provider for LocalService {
         Ok(Response::new(response))
     }
 
-    async fn get_task_count_from_list(&self, request: Request<String>) -> Result<Response<ProviderResponse>, Status> {
+    async fn get_task_count_from_list(
+        &self,
+        request: Request<String>,
+    ) -> Result<Response<ProviderResponse>, Status> {
         tracing::info!("Request received: {request:?}");
         let id = request.into_inner();
         let mut response = ProviderResponse::default();
@@ -402,7 +442,7 @@ impl Provider for LocalService {
             let count: i64 = tasks
                 .filter(id_task.eq(id))
                 .count()
-                .get_result(&mut establish_connection()?)?;
+                .get_result(&mut Database::establish_connection()?)?;
             Ok(count)
         };
 

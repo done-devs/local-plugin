@@ -2,9 +2,7 @@ use chrono::{DateTime, NaiveDateTime, Utc};
 use diesel::{Insertable, Queryable};
 use uuid::Uuid;
 
-use proto_rust::{
-    provider::{Priority, Status, Task},
-};
+use proto_rust::provider::{Priority, Status, Task};
 
 use crate::schema::tasks;
 

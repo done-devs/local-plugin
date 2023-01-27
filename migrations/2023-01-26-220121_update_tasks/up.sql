@@ -11,3 +11,9 @@ ALTER TABLE tasks DROP COLUMN is_reminder_on;
 
 DROP TRIGGER IF EXISTS save_task_count_new;
 DROP TRIGGER IF EXISTS update_task_count;
+
+CREATE TRIGGER remove_tasks_on_list_delete
+    BEFORE DELETE ON lists
+BEGIN
+    DELETE FROM tasks WHERE tasks.parent = old.id_list;
+END;
