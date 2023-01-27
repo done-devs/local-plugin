@@ -8,3 +8,6 @@ ALTER TABLE tasks ADD COLUMN today BOOLEAN DEFAULT false NOT NULL;
 ALTER TABLE tasks ADD COLUMN deletion_date TIMESTAMP;
 ALTER TABLE tasks ADD COLUMN recurrence TEXT;
 ALTER TABLE tasks DROP COLUMN is_reminder_on;
+
+DROP TRIGGER IF EXISTS save_task_count_new;
+DROP TRIGGER IF EXISTS update_task_count;
