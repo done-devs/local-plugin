@@ -1,4 +1,4 @@
-ALTER TABLE tasks RENAME COLUMN parent_list TO parent;
+ALTER TABLE tasks RENAME COLUMN id_list TO parent;
 ALTER TABLE tasks RENAME COLUMN body TO notes;
 ALTER TABLE tasks RENAME COLUMN importance TO priority;
 ALTER TABLE tasks RENAME COLUMN completed_on TO completion_date;

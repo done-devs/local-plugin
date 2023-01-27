@@ -10,6 +10,11 @@ const DATABASE_NAME: &str = "done_database.db";
 pub fn migrate_database() -> Result<()> {
     let local_plugin_project = Project::new("dev", "edfloreshz", "local-plugin")
         .add_files(&[new_file!(DATABASE_NAME).set_format(FileFormat::Plain)])?;
+
+    if let Err(_) = Project::open("dev", "edfloreshz", "done") {
+        Project::new("dev", "edfloreshz", "done");
+    }
+
     let done_project = Project::open("dev", "edfloreshz", "done")?;
 
     let file = done_project
